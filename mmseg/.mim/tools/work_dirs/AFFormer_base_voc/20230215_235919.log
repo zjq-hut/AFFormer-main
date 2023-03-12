@@ -1,0 +1,2013 @@
+2023-02-15 23:59:19,916 - mmseg - INFO - OpenCV num_threads is `<built-in function getNumThreads>
+2023-02-15 23:59:22,353 - mmseg - INFO - Environment info:
+------------------------------------------------------------
+sys.platform: win32
+Python: 3.8.10 (default, May 19 2021, 13:12:57) [MSC v.1916 64 bit (AMD64)]
+CUDA available: True
+GPU 0: NVIDIA GeForce RTX 3060 Laptop GPU
+CUDA_HOME: C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\v11.1
+NVCC: Cuda compilation tools, release 11.1, V11.1.105
+MSVC: 用于 x64 的 Microsoft (R) C/C++ 优化编译器 19.29.30138 版
+GCC: n/a
+PyTorch: 1.8.0+cu111
+PyTorch compiling details: PyTorch built with:
+  - C++ Version: 199711
+  - MSVC 192829337
+  - Intel(R) Math Kernel Library Version 2020.0.2 Product Build 20200624 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v1.7.0 (Git Hash 7aed236906b1f7a05c0917e5257a1af05e9ff683)
+  - OpenMP 2019
+  - CPU capability usage: AVX2
+  - CUDA Runtime 11.1
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_61,code=sm_61;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_80,code=sm_80;-gencode;arch=compute_86,code=sm_86;-gencode;arch=compute_37,code=compute_37
+  - CuDNN 8.0.5
+  - Magma 2.5.4
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=11.1, CUDNN_VERSION=8.0.5, CXX_COMPILER=C:/w/b/windows/tmp_bin/sccache-cl.exe, CXX_FLAGS=/DWIN32 /D_WINDOWS /GR /EHsc /w /bigobj -DUSE_PTHREADPOOL -openmp:experimental -DNDEBUG -DUSE_FBGEMM -DUSE_XNNPACK, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.0, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=OFF, USE_NNPACK=OFF, USE_OPENMP=ON, 
+
+TorchVision: 0.9.0+cu111
+OpenCV: 4.6.0
+MMCV: 1.5.0
+MMCV Compiler: MSVC 192930138
+MMCV CUDA Compiler: 11.1
+MMSegmentation: 0.21.1+
+------------------------------------------------------------
+
+2023-02-15 23:59:22,369 - mmseg - INFO - Distributed training: False
+2023-02-15 23:59:22,541 - mmseg - INFO - Config:
+norm_cfg = dict(type='SyncBN', requires_grad=True)
+ham_norm_cfg = dict(type='GN', num_groups=32, requires_grad=True)
+model = dict(
+    type='EncoderDecoder',
+    pretrained=None,
+    backbone=dict(type='afformer_base', strides=[4, 2, 2, 2]),
+    decode_head=dict(
+        type='CLS',
+        in_channels=[216],
+        in_index=[3],
+        channels=256,
+        aff_channels=256,
+        dropout_ratio=0.1,
+        num_classes=2,
+        norm_cfg=dict(type='GN', num_groups=32, requires_grad=True),
+        align_corners=False,
+        loss_decode=dict(
+            type='CrossEntropyLoss', use_sigmoid=False, loss_weight=1.0),
+        aff_kwargs=dict(MD_R=16)),
+    train_cfg=dict(),
+    test_cfg=dict(mode='whole'))
+dataset_type = 'ADE20KDataset'
+data_root = 'G:/AI/data/medical'
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+crop_size = (512, 512)
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadAnnotations', reduce_zero_label=True),
+    dict(type='Resize', img_scale=(2048, 512), ratio_range=(0.5, 2.0)),
+    dict(type='RandomCrop', crop_size=(512, 512), cat_max_ratio=0.75),
+    dict(type='RandomFlip', prob=0.5),
+    dict(type='PhotoMetricDistortion'),
+    dict(
+        type='Normalize',
+        mean=[123.675, 116.28, 103.53],
+        std=[58.395, 57.12, 57.375],
+        to_rgb=True),
+    dict(type='Pad', size=(512, 512), pad_val=0, seg_pad_val=255),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'gt_semantic_seg'])
+]
+val_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(2048, 512),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='RandomFlip'),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img'])
+        ])
+]
+test_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(
+        type='MultiScaleFlipAug',
+        img_scale=(2048, 512),
+        flip=False,
+        transforms=[
+            dict(type='Resize', keep_ratio=True),
+            dict(type='ResizeToMultiple', size_divisor=32),
+            dict(type='RandomFlip'),
+            dict(
+                type='Normalize',
+                mean=[123.675, 116.28, 103.53],
+                std=[58.395, 57.12, 57.375],
+                to_rgb=True),
+            dict(type='ImageToTensor', keys=['img']),
+            dict(type='Collect', keys=['img'])
+        ])
+]
+data = dict(
+    samples_per_gpu=1,
+    workers_per_gpu=1,
+    train=dict(
+        type='RepeatDataset',
+        times=50,
+        dataset=dict(
+            type='ADE20KDataset',
+            data_root='G:/AI/data/medical',
+            img_dir='images/training',
+            ann_dir='annotations/training',
+            pipeline=[
+                dict(type='LoadImageFromFile'),
+                dict(type='LoadAnnotations', reduce_zero_label=True),
+                dict(
+                    type='Resize',
+                    img_scale=(2048, 512),
+                    ratio_range=(0.5, 2.0)),
+                dict(
+                    type='RandomCrop',
+                    crop_size=(512, 512),
+                    cat_max_ratio=0.75),
+                dict(type='RandomFlip', prob=0.5),
+                dict(type='PhotoMetricDistortion'),
+                dict(
+                    type='Normalize',
+                    mean=[123.675, 116.28, 103.53],
+                    std=[58.395, 57.12, 57.375],
+                    to_rgb=True),
+                dict(type='Pad', size=(512, 512), pad_val=0, seg_pad_val=255),
+                dict(type='DefaultFormatBundle'),
+                dict(type='Collect', keys=['img', 'gt_semantic_seg'])
+            ])),
+    val=dict(
+        type='ADE20KDataset',
+        data_root='G:/AI/data/medical',
+        img_dir='images/validation',
+        ann_dir='annotations/validation',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='MultiScaleFlipAug',
+                img_scale=(2048, 512),
+                flip=False,
+                transforms=[
+                    dict(type='Resize', keep_ratio=True),
+                    dict(type='RandomFlip'),
+                    dict(
+                        type='Normalize',
+                        mean=[123.675, 116.28, 103.53],
+                        std=[58.395, 57.12, 57.375],
+                        to_rgb=True),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]),
+    test=dict(
+        type='ADE20KDataset',
+        data_root='G:/AI/data/medical',
+        img_dir='images/validation',
+        ann_dir='annotations/validation',
+        pipeline=[
+            dict(type='LoadImageFromFile'),
+            dict(
+                type='MultiScaleFlipAug',
+                img_scale=(2048, 512),
+                flip=False,
+                transforms=[
+                    dict(type='Resize', keep_ratio=True),
+                    dict(type='ResizeToMultiple', size_divisor=32),
+                    dict(type='RandomFlip'),
+                    dict(
+                        type='Normalize',
+                        mean=[123.675, 116.28, 103.53],
+                        std=[58.395, 57.12, 57.375],
+                        to_rgb=True),
+                    dict(type='ImageToTensor', keys=['img']),
+                    dict(type='Collect', keys=['img'])
+                ])
+        ]))
+log_config = dict(
+    interval=50, hooks=[dict(type='TextLoggerHook', by_epoch=False)])
+dist_params = dict(backend='nccl')
+log_level = 'INFO'
+load_from = None
+resume_from = None
+workflow = [('train', 1)]
+cudnn_benchmark = True
+optimizer = dict(
+    type='AdamW', lr=0.0003, betas=(0.9, 0.999), weight_decay=0.01)
+optimizer_config = dict()
+lr_config = dict(
+    policy='poly',
+    warmup='linear',
+    warmup_iters=1500,
+    warmup_ratio=1e-06,
+    power=1.0,
+    min_lr=0.0,
+    by_epoch=False)
+runner = dict(type='IterBasedRunner', max_iters=160000)
+checkpoint_config = dict(by_epoch=False, interval=16000)
+evaluation = dict(interval=5000, metric='mIoU', pre_eval=True)
+find_unused_parameters = True
+work_dir = './work_dirs\AFFormer_base_voc'
+gpu_ids = [0]
+auto_resume = False
+
+2023-02-15 23:59:22,541 - mmseg - INFO - Set random seed to 455107480, deterministic: False
+2023-02-15 23:59:22,605 - mmseg - INFO - initialize CLS with init_cfg {'type': 'Normal', 'std': 0.01, 'override': {'name': 'conv_seg'}}
+Name of parameter - Initialization information
+
+backbone.stem.0.conv.weight - torch.Size([16, 3, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.stem.0.bn.weight - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.stem.0.bn.bias - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.stem.1.conv.weight - torch.Size([32, 16, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.stem.1.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.stem.1.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.0.patch_embeds.0.patch_conv.dwconv.weight - torch.Size([32, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.0.patch_embeds.0.patch_conv.pwconv.weight - torch.Size([32, 32, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.0.patch_embeds.0.patch_conv.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.0.patch_embeds.0.patch_conv.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.0.patch_embeds.1.patch_conv.dwconv.weight - torch.Size([32, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.0.patch_embeds.1.patch_conv.pwconv.weight - torch.Size([32, 32, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.0.patch_embeds.1.patch_conv.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.0.patch_embeds.1.patch_conv.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.1.patch_embeds.0.patch_conv.dwconv.weight - torch.Size([96, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.1.patch_embeds.0.patch_conv.pwconv.weight - torch.Size([96, 96, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.1.patch_embeds.0.patch_conv.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.1.patch_embeds.0.patch_conv.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.1.patch_embeds.1.patch_conv.dwconv.weight - torch.Size([96, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.1.patch_embeds.1.patch_conv.pwconv.weight - torch.Size([96, 96, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.1.patch_embeds.1.patch_conv.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.1.patch_embeds.1.patch_conv.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.2.patch_embeds.0.patch_conv.dwconv.weight - torch.Size([176, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.2.patch_embeds.0.patch_conv.pwconv.weight - torch.Size([176, 176, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.2.patch_embeds.0.patch_conv.bn.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.2.patch_embeds.0.patch_conv.bn.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.2.patch_embeds.1.patch_conv.dwconv.weight - torch.Size([176, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.2.patch_embeds.1.patch_conv.pwconv.weight - torch.Size([176, 176, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.2.patch_embeds.1.patch_conv.bn.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.2.patch_embeds.1.patch_conv.bn.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.3.patch_embeds.0.patch_conv.dwconv.weight - torch.Size([216, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.3.patch_embeds.0.patch_conv.pwconv.weight - torch.Size([216, 216, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.3.patch_embeds.0.patch_conv.bn.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.3.patch_embeds.0.patch_conv.bn.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.3.patch_embeds.1.patch_conv.dwconv.weight - torch.Size([216, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.3.patch_embeds.1.patch_conv.pwconv.weight - torch.Size([216, 216, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.patch_embed_stages.3.patch_embeds.1.patch_conv.bn.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.patch_embed_stages.3.patch_embeds.1.patch_conv.bn.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.Restore.conv1.conv.weight - torch.Size([16, 32, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.0.Restore.conv1.bn.weight - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.Restore.conv1.bn.bias - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.Restore.dwconv.weight - torch.Size([16, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.0.Restore.norm.weight - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.Restore.norm.bias - torch.Size([16]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.Restore.conv2.conv.weight - torch.Size([32, 16, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.0.Restore.conv2.bn.weight - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.Restore.conv2.bn.bias - torch.Size([32]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.aggregate.conv.weight - torch.Size([96, 32, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.0.aggregate.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.0.aggregate.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.Restore.conv1.conv.weight - torch.Size([48, 96, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.Restore.conv1.bn.weight - torch.Size([48]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.Restore.conv1.bn.bias - torch.Size([48]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.Restore.dwconv.weight - torch.Size([48, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.Restore.norm.weight - torch.Size([48]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.Restore.norm.bias - torch.Size([48]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.Restore.conv2.conv.weight - torch.Size([96, 48, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.Restore.conv2.bn.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.Restore.conv2.bn.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.aggregate.conv.weight - torch.Size([176, 96, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.aggregate.bn.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.aggregate.bn.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.cpe.proj.weight - torch.Size([96, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.cpe.proj.bias - torch.Size([96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.crpe.conv_list.0.weight - torch.Size([24, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.crpe.conv_list.0.bias - torch.Size([24]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.crpe.conv_list.1.weight - torch.Size([36, 1, 5, 5]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.crpe.conv_list.1.bias - torch.Size([36]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.crpe.conv_list.2.weight - torch.Size([36, 1, 7, 7]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.crpe.conv_list.2.bias - torch.Size([36]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.factoratt_crpe.qkv.weight - torch.Size([288, 96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.factoratt_crpe.qkv.bias - torch.Size([288]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.factoratt_crpe.proj.weight - torch.Size([96, 96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.factoratt_crpe.proj.bias - torch.Size([96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.mlp.fc1.weight - torch.Size([192, 96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.mlp.fc1.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.mlp.dwconv.dwconv.weight - torch.Size([192, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.mlp.dwconv.dwconv.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.mlp.fc2.weight - torch.Size([96, 192]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.mlp.fc2.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.norm1.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.norm1.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.norm2.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.0.norm2.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.factoratt_crpe.qkv.weight - torch.Size([288, 96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.factoratt_crpe.qkv.bias - torch.Size([288]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.factoratt_crpe.proj.weight - torch.Size([96, 96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.factoratt_crpe.proj.bias - torch.Size([96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.mlp.fc1.weight - torch.Size([192, 96]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.mlp.fc1.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.mlp.dwconv.dwconv.weight - torch.Size([192, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.mlp.dwconv.dwconv.bias - torch.Size([192]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.mlp.fc2.weight - torch.Size([96, 192]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.mlp.fc2.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.norm1.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.norm1.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.norm2.weight - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.1.mhca_blks.0.MHCA_layers.1.norm2.bias - torch.Size([96]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.Restore.conv1.conv.weight - torch.Size([88, 176, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.Restore.conv1.bn.weight - torch.Size([88]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.Restore.conv1.bn.bias - torch.Size([88]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.Restore.dwconv.weight - torch.Size([88, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.Restore.norm.weight - torch.Size([88]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.Restore.norm.bias - torch.Size([88]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.Restore.conv2.conv.weight - torch.Size([176, 88, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.Restore.conv2.bn.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.Restore.conv2.bn.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.aggregate.conv.weight - torch.Size([216, 176, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.aggregate.bn.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.aggregate.bn.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.cpe.proj.weight - torch.Size([176, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.cpe.proj.bias - torch.Size([176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.crpe.conv_list.0.weight - torch.Size([44, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.crpe.conv_list.0.bias - torch.Size([44]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.crpe.conv_list.1.weight - torch.Size([66, 1, 5, 5]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.crpe.conv_list.1.bias - torch.Size([66]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.crpe.conv_list.2.weight - torch.Size([66, 1, 7, 7]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.crpe.conv_list.2.bias - torch.Size([66]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.factoratt_crpe.qkv.weight - torch.Size([528, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.factoratt_crpe.qkv.bias - torch.Size([528]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.factoratt_crpe.proj.weight - torch.Size([176, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.factoratt_crpe.proj.bias - torch.Size([176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.mlp.fc1.weight - torch.Size([352, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.mlp.fc1.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.mlp.dwconv.dwconv.weight - torch.Size([352, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.mlp.dwconv.dwconv.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.mlp.fc2.weight - torch.Size([176, 352]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.mlp.fc2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.norm1.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.norm1.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.norm2.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.0.norm2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.factoratt_crpe.qkv.weight - torch.Size([528, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.factoratt_crpe.qkv.bias - torch.Size([528]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.factoratt_crpe.proj.weight - torch.Size([176, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.factoratt_crpe.proj.bias - torch.Size([176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.mlp.fc1.weight - torch.Size([352, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.mlp.fc1.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.mlp.dwconv.dwconv.weight - torch.Size([352, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.mlp.dwconv.dwconv.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.mlp.fc2.weight - torch.Size([176, 352]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.mlp.fc2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.norm1.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.norm1.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.norm2.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.1.norm2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.factoratt_crpe.qkv.weight - torch.Size([528, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.factoratt_crpe.qkv.bias - torch.Size([528]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.factoratt_crpe.proj.weight - torch.Size([176, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.factoratt_crpe.proj.bias - torch.Size([176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.mlp.fc1.weight - torch.Size([352, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.mlp.fc1.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.mlp.dwconv.dwconv.weight - torch.Size([352, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.mlp.dwconv.dwconv.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.mlp.fc2.weight - torch.Size([176, 352]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.mlp.fc2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.norm1.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.norm1.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.norm2.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.2.norm2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.factoratt_crpe.qkv.weight - torch.Size([528, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.factoratt_crpe.qkv.bias - torch.Size([528]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.factoratt_crpe.proj.weight - torch.Size([176, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.factoratt_crpe.proj.bias - torch.Size([176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.mlp.fc1.weight - torch.Size([352, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.mlp.fc1.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.mlp.dwconv.dwconv.weight - torch.Size([352, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.mlp.dwconv.dwconv.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.mlp.fc2.weight - torch.Size([176, 352]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.mlp.fc2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.norm1.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.norm1.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.norm2.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.3.norm2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.factoratt_crpe.qkv.weight - torch.Size([528, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.factoratt_crpe.qkv.bias - torch.Size([528]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.factoratt_crpe.proj.weight - torch.Size([176, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.factoratt_crpe.proj.bias - torch.Size([176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.mlp.fc1.weight - torch.Size([352, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.mlp.fc1.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.mlp.dwconv.dwconv.weight - torch.Size([352, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.mlp.dwconv.dwconv.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.mlp.fc2.weight - torch.Size([176, 352]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.mlp.fc2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.norm1.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.norm1.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.norm2.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.4.norm2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.factoratt_crpe.qkv.weight - torch.Size([528, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.factoratt_crpe.qkv.bias - torch.Size([528]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.factoratt_crpe.proj.weight - torch.Size([176, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.factoratt_crpe.proj.bias - torch.Size([176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.mlp.fc1.weight - torch.Size([352, 176]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.mlp.fc1.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.mlp.dwconv.dwconv.weight - torch.Size([352, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.mlp.dwconv.dwconv.bias - torch.Size([352]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.mlp.fc2.weight - torch.Size([176, 352]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.mlp.fc2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.norm1.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.norm1.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.norm2.weight - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.2.mhca_blks.0.MHCA_layers.5.norm2.bias - torch.Size([176]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.Restore.conv1.conv.weight - torch.Size([108, 216, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.Restore.conv1.bn.weight - torch.Size([108]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.Restore.conv1.bn.bias - torch.Size([108]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.Restore.dwconv.weight - torch.Size([108, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.Restore.norm.weight - torch.Size([108]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.Restore.norm.bias - torch.Size([108]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.Restore.conv2.conv.weight - torch.Size([216, 108, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.Restore.conv2.bn.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.Restore.conv2.bn.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.aggregate.conv.weight - torch.Size([216, 216, 1, 1]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.aggregate.bn.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.aggregate.bn.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.cpe.proj.weight - torch.Size([216, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.cpe.proj.bias - torch.Size([216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.crpe.conv_list.0.weight - torch.Size([54, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.crpe.conv_list.0.bias - torch.Size([54]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.crpe.conv_list.1.weight - torch.Size([81, 1, 5, 5]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.crpe.conv_list.1.bias - torch.Size([81]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.crpe.conv_list.2.weight - torch.Size([81, 1, 7, 7]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.crpe.conv_list.2.bias - torch.Size([81]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.factoratt_crpe.qkv.weight - torch.Size([648, 216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.factoratt_crpe.qkv.bias - torch.Size([648]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.factoratt_crpe.proj.weight - torch.Size([216, 216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.factoratt_crpe.proj.bias - torch.Size([216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.mlp.fc1.weight - torch.Size([432, 216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.mlp.fc1.bias - torch.Size([432]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.mlp.dwconv.dwconv.weight - torch.Size([432, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.mlp.dwconv.dwconv.bias - torch.Size([432]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.mlp.fc2.weight - torch.Size([216, 432]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.mlp.fc2.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.norm1.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.norm1.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.norm2.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.0.norm2.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.factoratt_crpe.qkv.weight - torch.Size([648, 216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.factoratt_crpe.qkv.bias - torch.Size([648]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.factoratt_crpe.proj.weight - torch.Size([216, 216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.factoratt_crpe.proj.bias - torch.Size([216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.mlp.fc1.weight - torch.Size([432, 216]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.mlp.fc1.bias - torch.Size([432]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.mlp.dwconv.dwconv.weight - torch.Size([432, 1, 3, 3]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.mlp.dwconv.dwconv.bias - torch.Size([432]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.mlp.fc2.weight - torch.Size([216, 432]): 
+Initialized by user-defined `init_weights` in afformer_base  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.mlp.fc2.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.norm1.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.norm1.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.norm2.weight - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+backbone.mhca_stages.3.mhca_blks.0.MHCA_layers.1.norm2.bias - torch.Size([216]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+decode_head.conv_seg.weight - torch.Size([2, 256, 1, 1]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+decode_head.conv_seg.bias - torch.Size([2]): 
+NormalInit: mean=0, std=0.01, bias=0 
+
+decode_head.squeeze.conv.weight - torch.Size([256, 216, 1, 1]): 
+Initialized by user-defined `init_weights` in ConvModule  
+
+decode_head.squeeze.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+decode_head.squeeze.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+decode_head.align.conv.weight - torch.Size([256, 256, 1, 1]): 
+Initialized by user-defined `init_weights` in ConvModule  
+
+decode_head.align.gn.weight - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+
+decode_head.align.gn.bias - torch.Size([256]): 
+The value is the same before and after calling `init_weights` of EncoderDecoder  
+2023-02-15 23:59:22,620 - mmseg - INFO - EncoderDecoder(
+  (backbone): afformer_base(
+    (stem): Sequential(
+      (0): Conv2d_BN(
+        (conv): Conv2d(3, 16, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn): SyncBatchNorm(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (act_layer): Hardswish()
+      )
+      (1): Conv2d_BN(
+        (conv): Conv2d(16, 32, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), bias=False)
+        (bn): SyncBatchNorm(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (act_layer): Hardswish()
+      )
+    )
+    (patch_embed_stages): ModuleList(
+      (0): Patch_Embed_stage(
+        (patch_embeds): ModuleList(
+          (0): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=32, bias=False)
+              (pwconv): Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+          (1): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(32, 32, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=32, bias=False)
+              (pwconv): Conv2d(32, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+        )
+      )
+      (1): Patch_Embed_stage(
+        (patch_embeds): ModuleList(
+          (0): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(96, 96, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=96, bias=False)
+              (pwconv): Conv2d(96, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+          (1): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96, bias=False)
+              (pwconv): Conv2d(96, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+        )
+      )
+      (2): Patch_Embed_stage(
+        (patch_embeds): ModuleList(
+          (0): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176, bias=False)
+              (pwconv): Conv2d(176, 176, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(176, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+          (1): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(176, 176, kernel_size=(3, 3), stride=(2, 2), padding=(1, 1), groups=176, bias=False)
+              (pwconv): Conv2d(176, 176, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(176, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+        )
+      )
+      (3): Patch_Embed_stage(
+        (patch_embeds): ModuleList(
+          (0): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(216, 216, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=216, bias=False)
+              (pwconv): Conv2d(216, 216, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(216, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+          (1): DWCPatchEmbed(
+            (patch_conv): DWConv2d_BN(
+              (dwconv): Conv2d(216, 216, kernel_size=(3, 3), stride=(4, 4), padding=(1, 1), groups=216, bias=False)
+              (pwconv): Conv2d(216, 216, kernel_size=(1, 1), stride=(1, 1), bias=False)
+              (bn): SyncBatchNorm(216, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+              (act): Hardswish()
+            )
+          )
+        )
+      )
+    )
+    (mhca_stages): ModuleList(
+      (0): MHCA_stage(
+        (Restore): Restore(
+          (conv1): Conv2d_BN(
+            (conv): Conv2d(32, 16, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Hardswish()
+          )
+          (dwconv): Conv2d(16, 16, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=16, bias=False)
+          (norm): SyncBatchNorm(16, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act): Hardswish()
+          (conv2): Conv2d_BN(
+            (conv): Conv2d(16, 32, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(32, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Identity()
+          )
+        )
+        (aggregate): Conv2d_BN(
+          (conv): Conv2d(32, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act_layer): Hardswish()
+        )
+      )
+      (1): MHCA_stage(
+        (Restore): Restore(
+          (conv1): Conv2d_BN(
+            (conv): Conv2d(96, 48, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Hardswish()
+          )
+          (dwconv): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48, bias=False)
+          (norm): SyncBatchNorm(48, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act): Hardswish()
+          (conv2): Conv2d_BN(
+            (conv): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(96, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Identity()
+          )
+        )
+        (aggregate): Conv2d_BN(
+          (conv): Conv2d(96, 176, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(176, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act_layer): Hardswish()
+        )
+        (mhca_blks): ModuleList(
+          (0): MHCAEncoder(
+            (cpe): ConvPosEnc(
+              (proj): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+            )
+            (crpe): FilterModule(
+              (conv_list): ModuleList(
+                (0): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=24)
+                (1): Conv2d(36, 36, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=36)
+                (2): Conv2d(36, 36, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=36)
+              )
+              (LP): LowPassModule(
+                (stages): ModuleList(
+                  (0): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                  )
+                  (1): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                  )
+                  (2): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                  )
+                  (3): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                  )
+                )
+                (relu): ReLU()
+              )
+            )
+            (MHCA_layers): ModuleList(
+              (0): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=24)
+                    (1): Conv2d(36, 36, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=36)
+                    (2): Conv2d(36, 36, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=36)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=96, out_features=288, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=96, out_features=96, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=24)
+                      (1): Conv2d(36, 36, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=36)
+                      (2): Conv2d(36, 36, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=36)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=96, out_features=192, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=192, out_features=96, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((96,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((96,), eps=1e-06, elementwise_affine=True)
+              )
+              (1): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=24)
+                    (1): Conv2d(36, 36, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=36)
+                    (2): Conv2d(36, 36, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=36)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=96, out_features=288, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=96, out_features=96, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(24, 24, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=24)
+                      (1): Conv2d(36, 36, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=36)
+                      (2): Conv2d(36, 36, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=36)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=96, out_features=192, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(192, 192, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=192)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=192, out_features=96, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((96,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((96,), eps=1e-06, elementwise_affine=True)
+              )
+            )
+          )
+        )
+      )
+      (2): MHCA_stage(
+        (Restore): Restore(
+          (conv1): Conv2d_BN(
+            (conv): Conv2d(176, 88, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(88, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Hardswish()
+          )
+          (dwconv): Conv2d(88, 88, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=88, bias=False)
+          (norm): SyncBatchNorm(88, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act): Hardswish()
+          (conv2): Conv2d_BN(
+            (conv): Conv2d(88, 176, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(176, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Identity()
+          )
+        )
+        (aggregate): Conv2d_BN(
+          (conv): Conv2d(176, 216, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(216, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act_layer): Hardswish()
+        )
+        (mhca_blks): ModuleList(
+          (0): MHCAEncoder(
+            (cpe): ConvPosEnc(
+              (proj): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176)
+            )
+            (crpe): FilterModule(
+              (conv_list): ModuleList(
+                (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+              )
+              (LP): LowPassModule(
+                (stages): ModuleList(
+                  (0): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                  )
+                  (1): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                  )
+                  (2): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                  )
+                  (3): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                  )
+                )
+                (relu): ReLU()
+              )
+            )
+            (MHCA_layers): ModuleList(
+              (0): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                    (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                    (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=176, out_features=528, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=176, out_features=176, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                      (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                      (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=176, out_features=352, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(352, 352, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=352)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=352, out_features=176, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+              )
+              (1): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                    (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                    (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=176, out_features=528, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=176, out_features=176, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                      (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                      (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=176, out_features=352, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(352, 352, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=352)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=352, out_features=176, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+              )
+              (2): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                    (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                    (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=176, out_features=528, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=176, out_features=176, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                      (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                      (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=176, out_features=352, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(352, 352, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=352)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=352, out_features=176, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+              )
+              (3): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                    (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                    (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=176, out_features=528, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=176, out_features=176, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                      (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                      (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=176, out_features=352, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(352, 352, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=352)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=352, out_features=176, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+              )
+              (4): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                    (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                    (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=176, out_features=528, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=176, out_features=176, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                      (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                      (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=176, out_features=352, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(352, 352, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=352)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=352, out_features=176, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+              )
+              (5): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(176, 176, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=176)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                    (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                    (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=176, out_features=528, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=176, out_features=176, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(44, 44, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=44)
+                      (1): Conv2d(66, 66, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=66)
+                      (2): Conv2d(66, 66, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=66)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=176, out_features=352, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(352, 352, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=352)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=352, out_features=176, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((176,), eps=1e-06, elementwise_affine=True)
+              )
+            )
+          )
+        )
+      )
+      (3): MHCA_stage(
+        (Restore): Restore(
+          (conv1): Conv2d_BN(
+            (conv): Conv2d(216, 108, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(108, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Hardswish()
+          )
+          (dwconv): Conv2d(108, 108, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=108, bias=False)
+          (norm): SyncBatchNorm(108, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act): Hardswish()
+          (conv2): Conv2d_BN(
+            (conv): Conv2d(108, 216, kernel_size=(1, 1), stride=(1, 1), bias=False)
+            (bn): SyncBatchNorm(216, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+            (act_layer): Identity()
+          )
+        )
+        (aggregate): Conv2d_BN(
+          (conv): Conv2d(216, 216, kernel_size=(1, 1), stride=(1, 1), bias=False)
+          (bn): SyncBatchNorm(216, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+          (act_layer): Hardswish()
+        )
+        (mhca_blks): ModuleList(
+          (0): MHCAEncoder(
+            (cpe): ConvPosEnc(
+              (proj): Conv2d(216, 216, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=216)
+            )
+            (crpe): FilterModule(
+              (conv_list): ModuleList(
+                (0): Conv2d(54, 54, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=54)
+                (1): Conv2d(81, 81, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=81)
+                (2): Conv2d(81, 81, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=81)
+              )
+              (LP): LowPassModule(
+                (stages): ModuleList(
+                  (0): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                  )
+                  (1): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                  )
+                  (2): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                  )
+                  (3): Sequential(
+                    (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                  )
+                )
+                (relu): ReLU()
+              )
+            )
+            (MHCA_layers): ModuleList(
+              (0): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(216, 216, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=216)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(54, 54, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=54)
+                    (1): Conv2d(81, 81, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=81)
+                    (2): Conv2d(81, 81, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=81)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=216, out_features=648, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=216, out_features=216, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(54, 54, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=54)
+                      (1): Conv2d(81, 81, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=81)
+                      (2): Conv2d(81, 81, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=81)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=216, out_features=432, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(432, 432, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=432)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=432, out_features=216, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((216,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((216,), eps=1e-06, elementwise_affine=True)
+              )
+              (1): MHCABlock(
+                (cpe): ConvPosEnc(
+                  (proj): Conv2d(216, 216, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=216)
+                )
+                (crpe): FilterModule(
+                  (conv_list): ModuleList(
+                    (0): Conv2d(54, 54, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=54)
+                    (1): Conv2d(81, 81, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=81)
+                    (2): Conv2d(81, 81, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=81)
+                  )
+                  (LP): LowPassModule(
+                    (stages): ModuleList(
+                      (0): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                      )
+                      (1): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                      )
+                      (2): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                      )
+                      (3): Sequential(
+                        (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                      )
+                    )
+                    (relu): ReLU()
+                  )
+                )
+                (factoratt_crpe): Frequency_FilterModule(
+                  (qkv): Linear(in_features=216, out_features=648, bias=True)
+                  (attn_drop): Dropout(p=0.0, inplace=False)
+                  (proj): Linear(in_features=216, out_features=216, bias=True)
+                  (proj_drop): Dropout(p=0.0, inplace=False)
+                  (crpe): FilterModule(
+                    (conv_list): ModuleList(
+                      (0): Conv2d(54, 54, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=54)
+                      (1): Conv2d(81, 81, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=81)
+                      (2): Conv2d(81, 81, kernel_size=(7, 7), stride=(1, 1), padding=(3, 3), groups=81)
+                    )
+                    (LP): LowPassModule(
+                      (stages): ModuleList(
+                        (0): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(1, 1))
+                        )
+                        (1): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(2, 2))
+                        )
+                        (2): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(3, 3))
+                        )
+                        (3): Sequential(
+                          (0): AdaptiveAvgPool2d(output_size=(6, 6))
+                        )
+                      )
+                      (relu): ReLU()
+                    )
+                  )
+                )
+                (mlp): Mlp(
+                  (fc1): Linear(in_features=216, out_features=432, bias=True)
+                  (dwconv): DWConv(
+                    (dwconv): Conv2d(432, 432, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=432)
+                  )
+                  (act): GELU()
+                  (fc2): Linear(in_features=432, out_features=216, bias=True)
+                  (drop): Dropout(p=0.0, inplace=False)
+                )
+                (drop_path): Identity()
+                (norm1): LayerNorm((216,), eps=1e-06, elementwise_affine=True)
+                (norm2): LayerNorm((216,), eps=1e-06, elementwise_affine=True)
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+  (decode_head): CLS(
+    input_transform=multiple_select, ignore_index=255, align_corners=False
+    (loss_decode): CrossEntropyLoss()
+    (conv_seg): Conv2d(256, 2, kernel_size=(1, 1), stride=(1, 1))
+    (dropout): Dropout2d(p=0.1, inplace=False)
+    (squeeze): ConvModule(
+      (conv): Conv2d(216, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (gn): GroupNorm(32, 256, eps=1e-05, affine=True)
+      (activate): ReLU(inplace=True)
+    )
+    (align): ConvModule(
+      (conv): Conv2d(256, 256, kernel_size=(1, 1), stride=(1, 1), bias=False)
+      (gn): GroupNorm(32, 256, eps=1e-05, affine=True)
+      (activate): ReLU(inplace=True)
+    )
+  )
+  init_cfg={'type': 'Normal', 'std': 0.01, 'override': {'name': 'conv_seg'}}
+)
+2023-02-15 23:59:22,637 - mmseg - INFO - Loaded 0 images
